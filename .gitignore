@@ -7,33 +7,61 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-.DS_Store
-dist
-dist-ssr
-coverage
-*.local
+# Dependency directories
+node_modules/
+jspm_packages/
 
-# Editor directories and files
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+Thumbe.db
+ehthumbs.db
+Desktop.ini
+
+# IDEs and Editors
 .vscode/*
 !.vscode/extensions.json
-.idea
+!.vscode/settings.json
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+.editorconfig
 
+# Build and Production
+.vite/
+dist/
+dist-ssr/
+build/
 *.tsbuildinfo
 
-.eslintcache
-
-# Cypress
+# Testing
+coverage/
+__screenshots__/
 /cypress/videos/
 /cypress/screenshots/
+.nyc_output
+test-results/
 
-# Vitest
-__screenshots__/
+# Env / Secrets
+.env
+.env.local
+.env.*.local
+*.local
+
+# Tooling caches
+.eslintcache
+.stylelintcache
+.prettiercache
+.oxlintcache
+.node_repl_history
 
 # Vite
 *.timestamp-*-*.mjs
+*.timestamp-*-*.ts
+
+# Gemini CLI / Agent specific
+.gemini/
