@@ -22,41 +22,52 @@ export interface CreditCalculatorOptions {
   interestRate: number
   initialRepayment: number
   equity: number
+  yearsToCalculate?: number
 }
 
 export class CreditCalculatorService {
   /**
+   * Helper to round to 2 decimal places safely.
+   */
+  private static round(value: number): number {
+    return Math.round((value + Number.EPSILON) * 100) / 100
+  }
+
+  /**
    * Calculates the monthly payment rate (Annuity).
    */
-  public static calculateMonthlyRate(loanAmount: number, interestRate: number, initialRepayment: number): number {
+  public static calculateMonthlyRate(
+    loanAmount: number,
+    interestRate: number,
+    initialRepayment: number,
+  ): number {
     const annualRate = (loanAmount * (interestRate + initialRepayment)) / 100
-    return annualRate / 12
+    return this.round(annualRate / 12)
   }
 
   /**
    * Generates a monthly amortization schedule.
    */
   public static calculateSchedule(options: CreditCalculatorOptions): PaymentEntry[] {
-    const { loanAmount, interestRate, yearsToCalculate } = options
-    let remainingBalance = loanAmount
+    const { loanAmount, interestRate } = options
+    let remainingBalance = this.round(loanAmount)
     const monthlyInterestRate = interestRate / 100 / 12
     const rate = this.calculateMonthlyRate(loanAmount, interestRate, options.initialRepayment)
-    
+
     const result: PaymentEntry[] = []
-    
     let month = 1
     const maxMonths = 1200 // Safety limit of 100 years
-    
+
     while (remainingBalance > 0 && month <= maxMonths) {
-      const interestPayment = remainingBalance * monthlyInterestRate
-      let repaymentPayment = rate - interestPayment
-      
+      const interestPayment = this.round(remainingBalance * monthlyInterestRate)
+      let repaymentPayment = this.round(rate - interestPayment)
+
       if (remainingBalance < repaymentPayment) {
-          repaymentPayment = remainingBalance
+        repaymentPayment = remainingBalance
       }
 
-      const totalPayment = interestPayment + repaymentPayment
-      remainingBalance -= repaymentPayment
+      const totalPayment = this.round(interestPayment + repaymentPayment)
+      remainingBalance = this.round(remainingBalance - repaymentPayment)
 
       result.push({
         month,
@@ -64,7 +75,7 @@ export class CreditCalculatorService {
         interestPayment,
         repaymentPayment,
         totalPayment,
-        remainingBalance: Math.max(0, remainingBalance)
+        remainingBalance: Math.max(0, remainingBalance),
       })
 
       month++
@@ -77,30 +88,30 @@ export class CreditCalculatorService {
    */
   public static aggregateYearlySchedule(monthlySchedule: PaymentEntry[]): YearlyPaymentEntry[] {
     const years: YearlyPaymentEntry[] = []
-    let currentYear: YearlyPaymentEntry = { 
-        year: 1, 
-        interestPayment: 0, 
-        repaymentPayment: 0, 
-        totalPayment: 0,
-        remainingBalance: 0 
+    let currentYear: YearlyPaymentEntry = {
+      year: 1,
+      interestPayment: 0,
+      repaymentPayment: 0,
+      totalPayment: 0,
+      remainingBalance: 0,
     }
 
     monthlySchedule.forEach((m, index) => {
-        currentYear.interestPayment += m.interestPayment
-        currentYear.repaymentPayment += m.repaymentPayment
-        currentYear.totalPayment += m.totalPayment
-        currentYear.remainingBalance = m.remainingBalance
-        
-        if (m.month % 12 === 0 || index === monthlySchedule.length - 1) {
-            years.push({ ...currentYear })
-            currentYear = { 
-                year: currentYear.year + 1, 
-                interestPayment: 0, 
-                repaymentPayment: 0, 
-                totalPayment: 0,
-                remainingBalance: 0 
-            }
+      currentYear.interestPayment = this.round(currentYear.interestPayment + m.interestPayment)
+      currentYear.repaymentPayment = this.round(currentYear.repaymentPayment + m.repaymentPayment)
+      currentYear.totalPayment = this.round(currentYear.totalPayment + m.totalPayment)
+      currentYear.remainingBalance = m.remainingBalance
+
+      if (m.month % 12 === 0 || index === monthlySchedule.length - 1) {
+        years.push({ ...currentYear })
+        currentYear = {
+          year: currentYear.year + 1,
+          interestPayment: 0,
+          repaymentPayment: 0,
+          totalPayment: 0,
+          remainingBalance: 0,
         }
+      }
     })
     return years
   }
